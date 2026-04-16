@@ -1,0 +1,147 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.43.1.0
+Copyright (C) 2025 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Duong DUC ANH, IU, LIC=----
+ 
+Tool Versions:
+Toolchain:       MDK-Lite  Version: 5.43.0.0
+Toolchain Path:  E:\keilc\arm\ARM\ARMCLANG\Bin
+C Compiler:      ArmClang.exe V6.24
+Assembler:       Armasm.exe V6.24
+Linker/Locator:  ArmLink.exe V6.24
+Library Manager: ArmAr.exe V6.24
+Hex Converter:   FromElf.exe V6.24
+CPU DLL:         SARMCM3.DLL V5.43.0.0
+Dialog DLL:      DCM.DLL V1.17.5.0
+Target DLL:      UL2CM3.DLL V1.164.16.0
+Dialog DLL:      TCM.DLL V1.56.6.0
+ 
+<h2>Project:</h2>
+C:\Users\DUC ANH\Downloads\EMBEDDED\Project-MCU\Green_House_ConTrol_System.uvprojx
+Project File Date:  03/28/2026
+
+<h2>Output:</h2>
+*** Using Compiler 'V6.24', folder: 'E:\keilc\arm\ARM\ARMCLANG\Bin'
+Build target 'Target 1'
+".\Objects\Pump_menu.axf" - 0 Error(s), 0 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack
+                ARM::CMSIS@5.6.0
+                CMSIS (Cortex Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.3.0
+   * Component: Keil RTX Version: 4.82.0
+   * Component: SPI Version: 2.2.0
+   * Component: RTOS Version: 1.0.0
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.LPC1700_DFP.2.7.1.pack
+                Keil::LPC1700_DFP@2.7.1
+                NXP LPC1700 Series Device Support, Drivers and Examples for MCB1700 and LPC1788-32
+   * Component: Graphic LCD Version: 1.0.0
+   * Component: Joystick Version: 1.0.0
+   * Component: LED Version: 1.0.0
+   * Component: SPI Version: 2.3.0
+   * Component: SSP Version: 2.10.0
+   * Component: GPDMA Version: 1.4.0
+   * Component: GPIO Version: 1.1.0
+   * Component: PIN Version: 1.0.0
+   * Component: Startup Version: 1.0.0
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.MDK-Middleware.7.13.0.pack
+                Keil::MDK-Middleware@7.13.0
+                Middleware for Keil MDK-Professional and MDK-Plus
+   * Component: Graphic LCD Version: 1.0.0
+   * Component: Joystick Version: 1.0.0
+   * Component: LED Version: 1.0.0
+
+<h2>Collection of Component include folders:</h2>
+  ./RTE/Device/LPC1768
+  ./RTE/_Target_1
+  E:/keilc/arm/pack/ARM/CMSIS/5.6.0/CMSIS/Core/Include
+  E:/keilc/arm/pack/ARM/CMSIS/5.6.0/CMSIS/Driver/Include
+  E:/keilc/arm/pack/ARM/CMSIS/5.6.0/CMSIS/RTOS/RTX/INC
+  E:/keilc/arm/pack/Keil/LPC1700_DFP/2.7.1/Boards/Keil/MCB1700/Common
+  E:/keilc/arm/pack/Keil/LPC1700_DFP/2.7.1/Device/Include
+  E:/keilc/arm/pack/Keil/LPC1700_DFP/2.7.1/RTE_Driver
+  E:/keilc/arm/pack/Keil/MDK-Middleware/7.13.0/Board
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE@5.3.0
+
+   * Component: ARM::CMSIS:RTOS:Keil RTX@4.82.0
+      Include file:  CMSIS/RTOS/RTX/UserCodeTemplates/osObjects.h
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/main.c
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/MemPool.c
+      Source file:   CMSIS/RTOS/RTX/Templates/RTX_Conf_CM.c
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/MsgQueue.c
+      Include file:  CMSIS/RTOS/RTX/INC/cmsis_os.h
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/MailQueue.c
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/Timer.c
+      Library file:  CMSIS/RTOS/RTX/LIB/ARM/RTX_CM3.lib
+      Source file:   CMSIS/RTOS/RTX/SRC/ARM/SVC_Table.s
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/Thread.c
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/Semaphore.c
+      Source file:   CMSIS/RTOS/RTX/UserCodeTemplates/Mutex.c
+
+   * Component: Board Support:Graphic LCD(API)@1.0.0
+      Include file:  Board/Board_GLCD.h
+
+   * Component: Board Support:Joystick(API)@1.0.0
+      Include file:  Board/Board_Joystick.h
+
+   * Component: Board Support:LED(API)@1.0.0
+      Include file:  Board/Board_LED.h
+
+   * Component: CMSIS Driver:SPI(API)@2.2.0
+      Include file:  CMSIS/Driver/Include/Driver_SPI.h
+
+   * Component: CMSIS:RTOS(API)@1.0.0
+
+   * Component: Keil::Board Support&MCB1700:Graphic LCD@1.0.0
+      Include file:  Boards/Keil/MCB1700/Common/GLCD_Config.h
+      Include file:  Boards/Keil/MCB1700/Common/GLCD_Fonts.h
+      Source file:   Boards/Keil/MCB1700/Common/GLCD_MCB1700.c
+      Source file:   Boards/Keil/MCB1700/Common/GLCD_Fonts.c
+
+   * Component: Keil::Board Support&MCB1700:Joystick@1.0.0
+      Source file:   Boards/Keil/MCB1700/Common/Joystick_MCB1700.c
+
+   * Component: Keil::Board Support&MCB1700:LED@1.0.0
+      Source file:   Boards/Keil/MCB1700/Common/LED_MCB1700.c
+
+   * Component: Keil::CMSIS Driver:SPI:SPI@2.3.0
+      Source file:   RTE_Driver/SPI_LPC17xx.c
+
+   * Component: Keil::CMSIS Driver:SPI:SSP@2.10.0
+      Source file:   RTE_Driver/SSP_LPC17xx.c
+
+   * Component: Keil::Device:GPDMA@1.4.0
+      Include file:  RTE_Driver/GPDMA_LPC17xx.h
+      Source file:   RTE_Driver/GPDMA_LPC17xx.c
+
+   * Component: Keil::Device:GPIO@1.1.0
+      Include file:  RTE_Driver/GPIO_LPC17xx.h
+      Source file:   RTE_Driver/GPIO_LPC17xx.c
+
+   * Component: Keil::Device:PIN@1.0.0
+      Include file:  RTE_Driver/PIN_LPC17xx.h
+      Source file:   RTE_Driver/PIN_LPC17xx.c
+
+   * Component: Keil::Device:Startup@1.0.0
+      Source file:   Device/Source/system_LPC17xx.c
+      Include file:  Device/Include/LPC17xx.h
+      Source file:   Device/Source/ARM/startup_LPC17xx.s
+      Include file:  RTE_Driver/Config/RTE_Device.h
+Build Time Elapsed:  00:00:00
+</pre>
+</body>
+</html>
