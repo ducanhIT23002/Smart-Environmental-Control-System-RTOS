@@ -57,6 +57,7 @@ typedef struct {
     volatile int seconds;
 } TimeData;
 
+// ------PHASE 1: SHARED RESOURCES------
 // Global Variables
 static osMutexId adc_mutex;
 static osMutexId glcd_mutex;
@@ -72,6 +73,9 @@ static volatile int selected_menu = 0;
 static volatile int timer_triggered[ACTUATOR_COUNT] = {0, 0, 0};
 static volatile int selected_field = 0;
 static volatile int selected_actuator = 0;
+// UART  Control Thread 
+static volatile int uart_triggered[ACTUATOR_COUNT] = {0, 0, 0};     
+static volatile int uart_command_state[ACTUATOR_COUNT] = {0, 0, 0}; 
 
 // Actuator Durations
 static volatile int heater_duration = 500;
@@ -83,10 +87,11 @@ static volatile int threshold_values[ACTUATOR_COUNT] = {1600, 5000, 4091};
 
 // Actuator Configurations
 static ActuatorConfig actuators[ACTUATOR_COUNT] = {
-    {"Heater",    &adc_values[0], &heater_duration,    (1 << 29), LPC_GPIO1},
-    {"Sprinkler", &adc_values[1], &sprinkler_duration, (1 << 31), LPC_GPIO1},
-    {"Light",     &adc_values[2], &light_duration,     (1 << 2),  LPC_GPIO2}
+    {"Heater",    &threshold_values[0], &heater_duration,    (1 << 29), LPC_GPIO1},
+    {"Sprinkler", &threshold_values[1], &sprinkler_duration, (1 << 31), LPC_GPIO1},
+    {"Light",     &threshold_values[2], &light_duration,     (1 << 2),  LPC_GPIO2}
 };
+// ------PHASE 1: SHARED RESOURCES------
 
 // Function Prototypes
 void init_hardware(void);
@@ -120,11 +125,13 @@ void init_hardware(void) {
     init_timer();
 }
 
+// ------PHASE 2: ADC HARDWARE INITIALIZATION------
 void init_adc(void) {
-    LPC_PINCON->PINSEL1 |= (1 << 14) | (1 << 16) | (1 << 18); // AD0.0�0.2 (P0.23�25)
+    LPC_PINCON->PINSEL1 |= (1 << 14) | (1 << 16) | (1 << 18); // AD0.0–0.2 (P0.23–P0.25)
     LPC_SC->PCONP |= (1 << 12); // Enable ADC power
-    LPC_ADC->ADCR = (7 << 0) | (4 << 8) | (1 << 21); // 3 channels, clock div, power ON
+    LPC_ADC->ADCR = (7 << 0) | (4 << 8) | (1 << 21); // 3 channels, clock divider, power ON
 }
+// ------PHASE 2: ADC HARDWARE INITIALIZATION------
 
 void init_gpio(void) {
     LPC_GPIO1->FIODIR |= (1 << 29) | (1 << 31) | (1 << 28); // Heater, Sprinkler, Status LED
@@ -135,6 +142,7 @@ void init_gpio(void) {
                           JOYSTICK_LEFT_PIN | JOYSTICK_RIGHT_PIN); // Joystick inputs
 }
 
+// ------PHASE 5: UART COMMUNICATION------
 void init_uart(void) {
     LPC_SC->PCONP |= (1 << 3); // Power up UART0
     LPC_PINCON->PINSEL0 |= (1 << 4) | (1 << 6); // P0.2 TXD0, P0.3 RXD0
@@ -142,6 +150,7 @@ void init_uart(void) {
     LPC_UART0->DLM = 0; LPC_UART0->DLL = 97; // 9600 baud
     LPC_UART0->LCR = 0x03; // 8 bits, 1 stop bit, no parity
 }
+// ------PHASE 5: UART COMMUNICATION------
 
 void init_timer(void) {
     LPC_SC->PCONP |= (1 << 2); // Power up Timer1
@@ -176,6 +185,7 @@ void update_time(void) {
     }
 }
 
+// ------PHASE 5: UART COMMUNICATION------
 // Utility Functions
 void send_uart_string(const char *str) {
     while (*str) {
@@ -183,7 +193,9 @@ void send_uart_string(const char *str) {
         LPC_UART0->THR = *str++;
     }
 }
+// ------PHASE 5: UART COMMUNICATION------
 
+// ------PHASE 2: ADC READING LOGIC & sensor_thread------
 int read_adc_channel(uint8_t channel) {
     LPC_ADC->ADCR &= ~(0x7 << 0); // Clear channel
     LPC_ADC->ADCR |= (1 << channel); // Select channel
@@ -191,6 +203,8 @@ int read_adc_channel(uint8_t channel) {
     while (!(LPC_ADC->ADGDR & (1U << 31))); // Wait for completion
     return (LPC_ADC->ADGDR >> 4) & 0xFFF; // 12-bit result
 }
+// ------PHASE 2: ADC READING LOGIC & sensor_thread------
+
 
 uint32_t read_joystick(void) {
     uint32_t state = 0;
@@ -212,6 +226,7 @@ void toggle_actuator(ActuatorType type) {
 }
 
 // RTOS Threads
+// ------PHASE 2: ADC READING LOGIC & sensor_thread------
 void sensor_thread(void const *arg) {
     while (1) {
         osMutexWait(adc_mutex, osWaitForever);
@@ -222,7 +237,10 @@ void sensor_thread(void const *arg) {
         osDelay(1000);
     }
 }
+// ------PHASE 2: ADC READING LOGIC & sensor_thread------
 
+
+// ------PHASE 5: UART COMMUNICATION------
 void uart_thread(void const *arg) {
     char buffer[64];
     while (1) {
@@ -234,7 +252,9 @@ void uart_thread(void const *arg) {
         osDelay(3000);
     }
 }
+// ------PHASE 5: UART COMMUNICATION------
 
+// ------PHASE 3: MONITOR & CONTROL LOGIC------
 void monitor_thread(void const *arg) {
     ActuatorType type = *(ActuatorType *)arg;
     while (1) {
@@ -247,12 +267,23 @@ void monitor_thread(void const *arg) {
         osDelay(1000);
     }
 }
+// ------PHASE 3: MONITOR & CONTROL LOGIC------
 
+
+// ------PHASE 3: MONITOR & CONTROL LOGIC------
 void control_thread(void const *arg) {
     ActuatorType type = *(ActuatorType *)arg;
     while (1) {
         osSemaphoreWait(actuator_sems[type], osWaitForever);
-        if (timer_triggered[type]) {
+        if (uart_triggered[type]) {
+            if (uart_command_state[type] == 1) {
+                actuators[type].port->FIOSET = actuators[type].pin; 
+            } else {
+                actuators[type].port->FIOCLR = actuators[type].pin;
+            }
+            uart_triggered[type] = 0; 
+        } 
+        else if (timer_triggered[type]) {
             actuators[type].port->FIOSET = actuators[type].pin;
             osDelay(*actuators[type].duration);
             actuators[type].port->FIOCLR = actuators[type].pin;
@@ -269,7 +300,10 @@ void control_thread(void const *arg) {
         }
     }
 }
+// ------PHASE 3: MONITOR & CONTROL LOGIC------
 
+
+// ------PHASE 5: UART COMMUNICATION (RX - RECEIVE DATA)------
 void uart_receive_thread(void const *arg) {
     char buffer[64];
     int idx = 0;
@@ -284,8 +318,16 @@ void uart_receive_thread(void const *arg) {
                         char on_cmd[16], off_cmd[16];
                         snprintf(on_cmd, sizeof(on_cmd), "%s:ON", actuators[i].name);
                         snprintf(off_cmd, sizeof(off_cmd), "%s:OFF", actuators[i].name);
-                        if (strstr(buffer, on_cmd)) actuators[i].port->FIOSET = actuators[i].pin;
-                        if (strstr(buffer, off_cmd)) actuators[i].port->FIOCLR = actuators[i].pin;
+                        if (strstr(buffer, on_cmd)) {
+                            uart_command_state[i] = 1;            // Ghi nhận lệnh BẬT
+                            uart_triggered[i] = 1;                // Dựng cờ báo hiệu có lệnh
+                            osSemaphoreRelease(actuator_sems[i]); // Rung chuông gọi Control Thread
+                        }
+                        if (strstr(buffer, off_cmd)) {
+                            uart_command_state[i] = 0;            // Ghi nhận lệnh TẮT
+                            uart_triggered[i] = 1;                // Dựng cờ báo hiệu có lệnh
+                            osSemaphoreRelease(actuator_sems[i]); // Rung chuông gọi Control Thread
+                        }
                     }
                 }
             } else {
@@ -295,6 +337,7 @@ void uart_receive_thread(void const *arg) {
         osDelay(10);
     }
 }
+// ------PHASE 5: UART COMMUNICATION (RX - RECEIVE DATA)------
 
 // Display Functions
 void display_menu(int prev_menu) {
@@ -840,12 +883,14 @@ osThreadDef(control_thread, osPriorityNormal, 1, 0);
 osThreadDef(uart_receive_thread, osPriorityNormal, 1, 0);
 osThreadDef(menu_thread, osPriorityNormal, 1, 0);
 
+// ------PHASE 1: SYNCHRONIZATION OBJECTS DEFINITIONS------
 // Mutex and Semaphore Definitions
 osMutexDef(adc_mutex);
 osMutexDef(glcd_mutex);
 osSemaphoreDef(heater_sem);
 osSemaphoreDef(sprinkler_sem);
 osSemaphoreDef(light_sem);
+// ------PHASE 1: SYNCHRONIZATION OBJECTS DEFINITIONS------
 
 // Main Function
 int main(void) {
