@@ -37,6 +37,10 @@ extern GLCD_FONT GLCD_Font_16x24;
 #define JOYSTICK_LEFT   0x08
 #define JOYSTICK_RIGHT  0x10
 
+#define SAFE_WATERING_HOUR_START 6  
+#define SAFE_WATERING_HOUR_END   18 
+#define HIGH_LIGHT_THRESHOLD     3000 
+
 // Data Structures
 typedef enum {
     ACTUATOR_HEATER,
@@ -259,10 +263,42 @@ void monitor_thread(void *arg) {
     }
 }
 
+// void control_thread(void *arg) {
+//     ActuatorType type = *(ActuatorType *)arg;
+//     while (1) {
+//         xSemaphoreTake(actuator_sems[type], portMAX_DELAY);
+//         if (uart_triggered[type]) {
+//             if (uart_command_state[type] == 1) {
+//                 actuators[type].port->FIOSET = actuators[type].pin; 
+//             } else {
+//                 actuators[type].port->FIOCLR = actuators[type].pin;
+//             }
+//             uart_triggered[type] = 0; 
+//         } 
+//         else if (timer_triggered[type]) {
+//             actuators[type].port->FIOSET = actuators[type].pin;
+//             vTaskDelay(pdMS_TO_TICKS(*actuators[type].duration));
+//             actuators[type].port->FIOCLR = actuators[type].pin;
+//             timer_triggered[type] = 0;
+//         } else {
+//             xSemaphoreTake(adc_mutex, portMAX_DELAY);
+//             if ((type == ACTUATOR_HEATER && adc_values[type] >= *actuators[type].threshold) ||
+//                 (type != ACTUATOR_HEATER && adc_values[type] <= *actuators[type].threshold)) {
+//                 actuators[type].port->FIOSET = actuators[type].pin;
+//                 vTaskDelay(pdMS_TO_TICKS(*actuators[type].duration));
+//                 actuators[type].port->FIOCLR = actuators[type].pin;
+//             }
+//             xSemaphoreGive(adc_mutex);
+//         }
+//     }
+// }
+
+//---------------------------------------PHASE 6 ---------------------------------------
 void control_thread(void *arg) {
     ActuatorType type = *(ActuatorType *)arg;
     while (1) {
         xSemaphoreTake(actuator_sems[type], portMAX_DELAY);
+        
         if (uart_triggered[type]) {
             if (uart_command_state[type] == 1) {
                 actuators[type].port->FIOSET = actuators[type].pin; 
@@ -276,18 +312,41 @@ void control_thread(void *arg) {
             vTaskDelay(pdMS_TO_TICKS(*actuators[type].duration));
             actuators[type].port->FIOCLR = actuators[type].pin;
             timer_triggered[type] = 0;
-        } else {
+        } 
+        else {
             xSemaphoreTake(adc_mutex, portMAX_DELAY);
-            if ((type == ACTUATOR_HEATER && adc_values[type] >= *actuators[type].threshold) ||
-                (type != ACTUATOR_HEATER && adc_values[type] <= *actuators[type].threshold)) {
+            int current_sensor_val = adc_values[type];
+            int current_light_val = adc_values[ACTUATOR_LIGHT]; 
+            xSemaphoreGive(adc_mutex);
+
+            int should_turn_on = 0;
+
+            if (type == ACTUATOR_SPRINKLER) {
+                if (current_sensor_val <= *actuators[type].threshold) {
+                    
+                    if (current_light_val < HIGH_LIGHT_THRESHOLD) {
+                        should_turn_on = 1; 
+                    } 
+                    else {
+                        send_uart_string("WARNING: Soil dry but light too harsh. Watering skipped!\n");
+                    }
+                }
+            } 
+            else if (type == ACTUATOR_HEATER) {
+                if (current_sensor_val >= *actuators[type].threshold) should_turn_on = 1;
+            } else if (type == ACTUATOR_LIGHT) {
+                if (current_sensor_val <= *actuators[type].threshold) should_turn_on = 1;
+            }
+
+            if (should_turn_on) {
                 actuators[type].port->FIOSET = actuators[type].pin;
                 vTaskDelay(pdMS_TO_TICKS(*actuators[type].duration));
                 actuators[type].port->FIOCLR = actuators[type].pin;
             }
-            xSemaphoreGive(adc_mutex);
         }
     }
 }
+//---------------------------------------PHASE 6 ---------------------------------------
 
 void uart_receive_thread(void *arg) {
     char buffer[64];
@@ -811,6 +870,47 @@ void control_timers(void) {
     display_menu(-1);
 }
 
+// void menu_thread(void *arg) {
+//     init_gpio();
+//     GLCD_Initialize();
+//     GLCD_SetFont(&GLCD_Font_16x24);
+//     display_menu(-1);
+
+//     int prev_menu = selected_menu;
+//     while (1) {
+//         uint32_t joystick = read_joystick();
+//         int updated = 0;
+
+//         if (!joystick) {
+//             vTaskDelay(pdMS_TO_TICKS(20));
+//             continue;
+//         }
+
+//         if ((joystick & JOYSTICK_UP) && selected_menu > 0) {
+//             selected_menu--;
+//             updated = 1;
+//         } else if ((joystick & JOYSTICK_DOWN) && selected_menu < 6) {
+//             selected_menu++;
+//             updated = 1;
+//         } else if (joystick & JOYSTICK_CENTER) {
+//             switch (selected_menu) {
+//                 case 0: show_sensors(); break;
+//                 case 1: control_actuators(); break;
+//                 case 2: adjust_threshold(ACTUATOR_HEATER); break;
+//                 case 3: adjust_threshold(ACTUATOR_SPRINKLER); break;
+//                 case 4: adjust_threshold(ACTUATOR_LIGHT); break;
+//                 case 5: adjust_durations(); break;
+//                 case 6: control_timers(); break;
+//             }
+//         }
+
+//         if (updated || selected_menu != prev_menu) {
+//             display_menu(prev_menu);
+//             prev_menu = selected_menu;
+//         }
+//         vTaskDelay(pdMS_TO_TICKS(20));
+//     }
+// }
 void menu_thread(void *arg) {
     init_gpio();
     GLCD_Initialize();
@@ -818,12 +918,43 @@ void menu_thread(void *arg) {
     display_menu(-1);
 
     int prev_menu = selected_menu;
+    
+    uint32_t last_activity = xTaskGetTickCount(); 
+    int is_sleeping = 0;                          
+
     while (1) {
         uint32_t joystick = read_joystick();
+        uint32_t current_tick = xTaskGetTickCount();
         int updated = 0;
 
-        if (!joystick) {
-            vTaskDelay(pdMS_TO_TICKS(20));
+        if (joystick) {
+            last_activity = current_tick; 
+            
+            if (is_sleeping) {
+                is_sleeping = 0;
+                display_menu(-1); 
+                vTaskDelay(pdMS_TO_TICKS(300)); 
+                continue; 
+            }
+        }
+
+        if (is_sleeping) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue; 
+        }
+
+
+        if (current_tick - last_activity > pdMS_TO_TICKS(10000)) {
+            is_sleeping = 1;
+            
+            xSemaphoreTake(glcd_mutex, portMAX_DELAY);
+            GLCD_SetBackgroundColor(COLOR_BLACK);
+            GLCD_ClearScreen();
+            GLCD_SetForegroundColor(COLOR_WHITE);
+            GLCD_DrawString(0, 4 * 24, "   SLEEP MODE   ");
+            GLCD_DrawString(0, 6 * 24, "Press any key...");
+            xSemaphoreGive(glcd_mutex);
+            
             continue;
         }
 
@@ -843,16 +974,17 @@ void menu_thread(void *arg) {
                 case 5: adjust_durations(); break;
                 case 6: control_timers(); break;
             }
+            last_activity = xTaskGetTickCount(); 
         }
 
         if (updated || selected_menu != prev_menu) {
             display_menu(prev_menu);
             prev_menu = selected_menu;
         }
-        vTaskDelay(pdMS_TO_TICKS(20));
+        
+        vTaskDelay(pdMS_TO_TICKS(20)); 
     }
 }
-
 // ------ Main Function ------
 int main(void) {
     SystemCoreClockUpdate();
