@@ -26,32 +26,10 @@ Project File Date:  04/30/2026
 
 <h2>Output:</h2>
 *** Using Compiler 'V6.24', folder: 'E:\keilc\arm\ARM\ARMCLANG\Bin'
-Rebuild target 'Target 1'
-compiling PIN_LPC17xx.c...
-compiling GPIO_LPC17xx.c...
-compiling clib_arm.c...
-compiling GLCD_Fonts.c...
-compiling GPDMA_LPC17xx.c...
-compiling os_systick.c...
-compiling Joystick_MCB1700.c...
-compiling LED_MCB1700.c...
-assembling startup_LPC17xx.s...
-compiling GLCD_MCB1700.c...
-compiling SPI_LPC17xx.c...
-compiling SSP_LPC17xx.c...
-compiling system_LPC17xx.c...
-compiling freertos_evr.c...
+Build target 'Target 1'
 compiling main.c...
-compiling event_groups.c...
-compiling list.c...
-compiling port.c...
-compiling heap_4.c...
-compiling cmsis_os2.c...
-compiling timers.c...
-compiling queue.c...
-compiling tasks.c...
 linking...
-Program Size: Code=18828 RO-data=6340 RW-data=76 ZI-data=12144  
+Program Size: Code=19292 RO-data=6380 RW-data=76 ZI-data=12152  
 FromELF: creating hex file...
 ".\Objects\Pump_menu.axf" - 0 Error(s), 0 Warning(s).
 
@@ -118,8 +96,8 @@ Package Vendor: Keil
    * Component: ARM::CMSIS:CORE@5.3.0
 
    * Component: ARM::CMSIS:RTOS2:FreeRTOS&Cortex-M@10.3.1
-      Source file:   CMSIS/RTOS2/FreeRTOS/Source/ARM/clib_arm.c
       Source file:   CMSIS/RTOS2/FreeRTOS/Source/os_systick.c
+      Source file:   CMSIS/RTOS2/FreeRTOS/Source/ARM/clib_arm.c
       Include file:  CMSIS/RTOS2/FreeRTOS/Include/freertos_mpool.h
       Source file:   CMSIS/RTOS2/FreeRTOS/Source/cmsis_os2.c
 
@@ -127,15 +105,15 @@ Package Vendor: Keil
       Include file:  CMSIS/RTOS2/FreeRTOS/Config/ARMCM/FreeRTOSConfig.h
 
    * Component: ARM::RTOS&FreeRTOS:Core&Cortex-M@10.3.1
-      Source file:   CMSIS/RTOS2/FreeRTOS/Source/freertos_evr.c
-      Include file:  Source/include/FreeRTOS.h
+      Include file:  Source/include/task.h
       Include file:  Source/include/queue.h
-      Source file:   Source/portable/GCC/ARM_CM3/port.c
-      Source file:   Source/tasks.c
+      Include file:  Source/include/semphr.h
+      Include file:  Source/include/FreeRTOS.h
       Source file:   Source/queue.c
       Source file:   Source/list.c
-      Include file:  Source/include/task.h
-      Include file:  Source/include/semphr.h
+      Source file:   Source/tasks.c
+      Source file:   Source/portable/GCC/ARM_CM3/port.c
+      Source file:   CMSIS/RTOS2/FreeRTOS/Source/freertos_evr.c
 
    * Component: ARM::RTOS&FreeRTOS:Event Groups@10.3.1
       Include file:  Source/include/event_groups.h
@@ -182,8 +160,8 @@ Package Vendor: Keil
       Source file:   RTE_Driver/SSP_LPC17xx.c
 
    * Component: Keil::Device:GPDMA@1.4.0
-      Source file:   RTE_Driver/GPDMA_LPC17xx.c
       Include file:  RTE_Driver/GPDMA_LPC17xx.h
+      Source file:   RTE_Driver/GPDMA_LPC17xx.c
 
    * Component: Keil::Device:GPIO@1.1.0
       Include file:  RTE_Driver/GPIO_LPC17xx.h
@@ -194,10 +172,10 @@ Package Vendor: Keil
       Source file:   RTE_Driver/PIN_LPC17xx.c
 
    * Component: Keil::Device:Startup@1.0.0
-      Source file:   Device/Source/system_LPC17xx.c
       Include file:  RTE_Driver/Config/RTE_Device.h
-      Source file:   Device/Source/ARM/startup_LPC17xx.s
       Include file:  Device/Include/LPC17xx.h
+      Source file:   Device/Source/ARM/startup_LPC17xx.s
+      Source file:   Device/Source/system_LPC17xx.c
 Build Time Elapsed:  00:00:01
 </pre>
 </body>
