@@ -11,26 +11,29 @@ The system serves as the core for smart applications such as smart greenhouses o
 
 ## ✨ Key Features & Technical Highlights
 
-### 1. Native FreeRTOS Implementation
-* **Task Management:** Re-architected system core to utilize native FreeRTOS `xTaskCreate` with precise priority and stack size allocation for 6 independent threads (Sensor, Control, Monitor, UART TX/RX, Menu).
-* **Resource Synchronization:** Implemented `SemaphoreHandle_t` using `xSemaphoreCreateMutex()` and `xSemaphoreCreateBinary()` to prevent race conditions and ensure thread-safe access to shared hardware (ADC, SPI GLCD) and data arrays.
-* **Nested Mutex Strategy:** Designed a robust locking mechanism in the UI thread to prevent screen tearing and data corruption during concurrent hardware updates, successfully avoiding deadlock scenarios.
+### 1. Tri-Mode Isolated Architecture (NEW)
+The system operates under three strictly isolated modes to prevent logic collision and race conditions:
+* **AUTO Mode:** Fully autonomous control driven by real-time sensor data and intelligent thresholds.
+* **TIMER Mode:** Schedule-based execution handled by a background RTC daemon, fully decoupled from the UI.
+* **MANUAL Mode:** Direct hardware intervention via physical UI joystick or remote UART commands.
 
-### 2. Intelligent Multi-Condition Control
+### 2. Native FreeRTOS Implementation & Heap Optimization
+* **Task Management:** Re-architected system core to support **10 concurrent threads** (Sensor, UART TX/RX, Menu, 3x Monitor, 3x Control). Optimized `configMINIMAL_STACK_SIZE` to prevent FreeRTOS heap exhaustion.
+* **Producer-Consumer Pattern:** Implemented `monitor_thread` (Producer) and `control_thread` (Consumer) communicating via `xSemaphoreCreateBinary()`. This decoupled design ensures the system never blocks during hardware delays.
+* **Resource Synchronization:** Used `xSemaphoreCreateMutex()` to prevent screen tearing on the GLCD and ensure thread-safe access to shared ADC hardware.
+
+### 3. Intelligent Multi-Condition Control
 Moved beyond simple threshold toggles by implementing context-aware actuator logic.
 * **Smart Irrigation:** The sprinkler system evaluates both soil moisture and sunlight intensity. It prevents watering during harsh sunlight (Light > 3000) to protect plant roots from boiling effects, logging a warning via UART instead.
 
-### 3. Energy Saving Mode (Deep Sleep UI)
-* Implemented a dynamic screen timeout mechanism using FreeRTOS `xTaskGetTickCount()`.
-* **CPU Optimization:** If no joystick activity is detected for 10 seconds, the GLCD enters a black-screen sleep state. The UI polling rate drops significantly (yielding CPU via `vTaskDelay`), redirecting maximum processing power to critical sensor and control tasks.
-
-### 4. Interactive Graphical User Interface (GLCD)
-* Built an event-driven, hierarchical menu system navigated via a 5-way joystick.
-* Features robust switch debouncing logic to ensure smooth user experience.
+### 4. Advanced Graphical User Interface (GLCD)
+* Built an event-driven, hierarchical menu system navigated via a 5-way joystick with robust hardware debouncing.
+* **Dynamic Rendering:** Implemented calculation-based UI offset rendering (using `strlen`) and selective frame updates to eliminate screen flickering.
+* **Energy Saving Mode:** A dynamic screen timeout mechanism drops the UI polling rate and powers down the GLCD after 10 seconds of inactivity, redirecting CPU cycles to critical core tasks.
 
 ### 5. Asynchronous UART Communication
 * Real-time telemetry data logging to PC via UART.
-* Non-blocking `uart_receive_thread` capable of parsing string commands (e.g., `Heater:ON`) to manually override automated system states via binary semaphores.
+* Non-blocking `uart_receive_thread` capable of parsing string commands (e.g., `CMD:Sprinkler:ON\n`) to remotely control the system when in MANUAL mode.
 
 ## 🛠️ Hardware Stack
 * **Microcontroller:** NXP LPC1768 (ARM Cortex-M3)
@@ -42,8 +45,9 @@ Moved beyond simple threshold toggles by implementing context-aware actuator log
 ## 🧠 System Architecture
 The system operates on an event-driven and time-triggered hybrid architecture:
 1. **`sensor_thread`**: Periodically acquires ADC data with mutex protection.
-2. **`control_thread`**: Acts on binary semaphores triggered by manual UART commands, timers, or the `monitor_thread`'s multi-condition logic.
-3. **`menu_thread`**: Manages GLCD state, user input, and the Energy Saving state machine.
+2. **`monitor_thread` (Daemon)**: Acts as a background watchdog, continuously tracking sensor thresholds (in AUTO mode) and RTC clocks (in TIMER mode), issuing semaphores when conditions are met.
+3. **`control_thread`**: Consumes semaphores to execute intelligent logic and toggle GPIO actuators without blocking the main system.
+4. **`menu_thread`**: Manages GLCD state, user input, and the Energy Saving state machine.
 
 ## 👨‍💻 Author
 **Dương Hoàng Đức Anh**
